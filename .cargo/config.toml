@@ -6,3 +6,7 @@ rustflags = ["-C", "target-cpu=native"]
 
 [target.wasm32-unknown-unknown]
 rustflags = ["-C", "target-feature=+simd128"]
+[http]
+proxy = "http://127.0.0.1:10809" 
+[https]
+proxy = "http://127.0.0.1:10809" 

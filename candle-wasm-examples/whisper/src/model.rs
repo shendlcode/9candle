@@ -394,7 +394,41 @@ impl TextDecoder {
         Ok(logits)
     }
 }
+/**
+ *1， class Whisper(nn.Module):
+    def __init__(self, dims: ModelDimensions):
+    这是Python版本
+    
+2，用RUST重新Python模型代码
+    impl TextDecoder {
+    fn load(vb: VarBuilder, cfg: &Config) -> Result<Self> {
+        let _timer = crate::Timer::new("TextDecoder::forward");
+        let n_state = cfg.d_model;
+        let n_head = cfg.decoder_attention_heads;
+        let n_ctx = cfg.max_target_positions;
+        let token_embedding = embedding(cfg.vocab_size, n_state, vb.pp("embed_tokens"))?;
+        let positional_embedding = vb.get((n_ctx, n_state), "embed_positions.weight")?;
+        let blocks = (0..cfg.decoder_layers)
+            .map(|i| {
+                ResidualAttentionBlock::load(n_state, n_head, true, vb.pp(&format!("layers.{i}")))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let ln = layer_norm(n_state, vb.pp("layer_norm"))?;
+        let mask: Vec<_> = (0..n_ctx)
+            .flat_map(|i| (0..n_ctx).map(move |j| if j > i { f32::NEG_INFINITY } else { 0f32 }))
+            .collect();
+        let mask = Tensor::from_vec(mask, (n_ctx, n_ctx), vb.device())?;
 
+        Ok(Self {
+            token_embedding,
+            positional_embedding,
+            blocks,
+            ln,
+            mask,
+        })
+    }
+ * 
+ */
 // https://github.com/openai/whisper/blob/f572f2161ba831bae131364c3bffdead7af6d210/whisper/model.py#L221
 pub struct Whisper {
     pub encoder: AudioEncoder,
@@ -404,7 +438,9 @@ pub struct Whisper {
 
 impl Whisper {
     pub fn load(vb: &VarBuilder, config: Config) -> Result<Self> {
+        //音频编码器   模型编码器
         let encoder = AudioEncoder::load(vb.pp("model.encoder"), &config)?;
+        //文本解码器   模型解码器
         let decoder = TextDecoder::load(vb.pp("model.decoder"), &config)?;
         Ok(Self {
             encoder,

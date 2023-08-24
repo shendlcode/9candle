@@ -270,7 +270,7 @@ impl WhichModel {
         }
     }
 }
-
+//命令行参数解析
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -280,16 +280,16 @@ struct Args {
 
     #[arg(long)]
     model_id: Option<String>,
-
+//使用https://huggingface.co/models?search=whisper 下哪一个模型。
     /// The model to use, check out available models:
     /// https://huggingface.co/models?search=whisper
     #[arg(long)]
     revision: Option<String>,
-
+//默认是英语小模型
     /// The model to be used, can be tiny, small, medium.
     #[arg(long, default_value = "tiny-en")]
     model: WhichModel,
-
+//输入的音频文件，需要解析
     /// The input to be processed, in wav format, will default to `jfk.wav`. Alternatively
     /// this can be set to sample:jfk, sample:gb1, ... to fetch a sample from the following
     /// repo: https://huggingface.co/datasets/Narsil/candle_demo/
@@ -303,12 +303,12 @@ struct Args {
     /// Enable tracing (generates a trace-timestamp.json file).
     #[arg(long)]
     tracing: bool,
-
+//语音的语言，可以提高解析速度
     /// Language.
     #[arg(long)]
     language: Option<String>,
 }
-
+//入口主程序
 fn main() -> Result<()> {
     use tracing_chrome::ChromeLayerBuilder;
     use tracing_subscriber::prelude::*;
@@ -390,13 +390,17 @@ fn main() -> Result<()> {
     let mel_len = mel.len();
     let mel = Tensor::from_vec(mel, (1, N_MELS, mel_len / N_MELS), &device)?;
     println!("loaded mel: {:?}", mel.dims());
-
+/**
+ * 从模型的权重文件，读取。然后加载rust模型。
+ */
     let weights = unsafe { candle::safetensors::MmapedFile::new(weights_filename)? };
     let weights = weights.deserialize()?;
     let vb = VarBuilder::from_safetensors(vec![weights], DTYPE, &device);
+    //这里报错。 有时网络报错
     let config: Config = serde_json::from_str(&std::fs::read_to_string(config_filename)?)?;
+    //获得AI模型  编码器，解码器，配置都有。python原来模型也有。
     let mut model = Whisper::load(&vb, config)?;
-
+//模型是否支持多语言
     let language_token = match (args.model.is_multilingual(), args.language) {
         (true, None) => Some(multilingual::detect_language(&mut model, &tokenizer, &mel)?),
         (false, None) => None,
@@ -408,6 +412,7 @@ fn main() -> Result<()> {
             anyhow::bail!("a language cannot be set for non-multilingual models")
         }
     };
+    //用模型解码音频文件 mel数据
     let mut dc = Decoder::new(model, tokenizer, args.seed, &device, language_token)?;
     dc.run(&mel)?;
     Ok(())

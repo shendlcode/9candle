@@ -59,3 +59,8 @@ required-features = ["cuda", "nccl", "flash-attn"]
 [[example]]
 name = "stable-diffusion"
 required-features = ["image"]
+
+[http]
+proxy = "http://127.0.0.1:10809" 
+[https]
+proxy = "http://127.0.0.1:10809" 

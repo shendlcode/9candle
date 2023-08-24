@@ -197,7 +197,7 @@ fn log_mel_spectrogram_<T: Float + std::fmt::Display>(
     }
     mel
 }
-
+//返回mel数据
 pub fn pcm_to_mel<T: Float + std::fmt::Display>(
     samples: &[T],
     filters: &[T],
