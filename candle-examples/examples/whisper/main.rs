@@ -326,7 +326,7 @@ fn main() -> Result<()> {
     let (default_model, default_revision) = args.model.model_and_revision();
     let default_model = default_model.to_string();
     let default_revision = default_revision.to_string();
-    let path = std::path::PathBuf::from(default_model.clone());
+    let path: std::path::PathBuf = std::path::PathBuf::from(default_model.clone());
     let (model_id, revision) = match (args.model_id, args.revision) {
         (Some(model_id), Some(revision)) => (model_id, revision),
         (Some(model_id), None) => (model_id, "main".to_string()),
